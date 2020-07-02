@@ -5,11 +5,9 @@ import shutil
 import argparse
 
 import mlflow
-import mlflow.sklearn
 from sklearn.model_selection import train_test_split
-from imblearn.pipeline import Pipeline
-from imblearn.over_sampling import SMOTE
-from sklearn.linear_model import LogisticRegression
+import xgboost as xgb
+import mlflow.xgboost
 
 from sklearn.metrics import classification_report, recall_score, precision_score, \
     average_precision_score, precision_recall_curve, f1_score, auc, \
@@ -27,6 +25,9 @@ if os.environ.get('PIPELINERUN', None):
     CSV_FILE = 'creditcard-train.csv'       
 else:
     CSV_FILE = 'creditcard.csv'
+
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
 class Run:
     def __init__(self, run_name, model_path):
@@ -107,6 +108,9 @@ class Run:
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(dataset.drop(
             'Class', 1), dataset['Class'], test_size=self.test_size, random_state=self.random_seed)
 
+        self.dtrain = xgb.DMatrix(self.X_train, self.y_train)
+        self.dtest = xgb.DMatrix(self.X_test, self.y_test)
+
     def run(self):
         self._prepare_dataset()
 
@@ -121,28 +125,40 @@ class Run:
             self.test()
 
     def train(self):
+        watchlist = [(self.dtrain, 'train'), (self.dtest, 'test')]
 
-        resampling = SMOTE(sampling_strategy='minority',
-                           random_state=self.random_seed)
-        self.model = Pipeline(
-            [('SMOTE', resampling), ('Logistic Regression', LogisticRegression())])
+        # Set xgboost parameters
+        params = {}
+        params['objective'] = 'binary:logistic'
+        params['eta'] = 0.039
+        params['max_depth'] = 2
+        params['subsample'] = 0.8
+        params['colsample_bytree'] = 0.9
+        params['eval_metric'] = 'auc'
+        params['random_state'] = self.random_seed
 
-        self.model.fit(self.X_train, self.y_train)
+        mlflow.xgboost.autolog() 
 
+        self.model = xgb.train(params, 
+                            self.dtrain, 
+                            1000, 
+                            watchlist, 
+                            early_stopping_rounds=50, 
+                            maximize=True, 
+                            verbose_eval=50)
+
+ 
         if os.path.exists(self.model_path):
             shutil.rmtree(self.model_path)
 
-        mlflow.sklearn.save_model(self.model, self.model_path)
-        mlflow.sklearn.log_model(self.model, 'models')
+        mlflow.xgboost.save_model(self.model, self.model_path)
 
     def test(self):
-        # Probabilities
-        y_proba_baseline = self.model.predict_proba(self.X_test)[:, 1]
+        y_proba_baseline = self.model.predict(self.dtest)
 
-        average_precision = average_precision_score(
-            self.y_test, y_proba_baseline)
+        average_precision = average_precision_score(self.y_test, y_proba_baseline)
         mlflow.log_metric('average_precision', average_precision)
-
+        
         rpt = classification_report(
             self.y_test, y_proba_baseline > self.threshold, output_dict=True)
         for lbl in ['0', '1']:
