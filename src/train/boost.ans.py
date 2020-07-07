@@ -6,7 +6,11 @@ import argparse
 
 import mlflow
 from sklearn.model_selection import train_test_split
-import xgboost as xgb
+from xgboost import XGBClassifier
+
+from imblearn.pipeline import Pipeline 
+from imblearn.over_sampling import SMOTE
+
 import mlflow.xgboost
 
 from sklearn.metrics import classification_report, recall_score, precision_score, \
@@ -108,8 +112,8 @@ class Run:
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(dataset.drop(
             'Class', 1), dataset['Class'], test_size=self.test_size, random_state=self.random_seed)
 
-        self.dtrain = xgb.DMatrix(self.X_train, self.y_train)
-        self.dtest = xgb.DMatrix(self.X_test, self.y_test)
+        # self.dtrain = xgb.DMatrix(self.X_train, self.y_train)
+        # self.dtest = xgb.DMatrix(self.X_test, self.y_test)
 
     def run(self):
         self._prepare_dataset()
@@ -125,8 +129,6 @@ class Run:
             self.test()
 
     def train(self):
-        watchlist = [(self.dtrain, 'train'), (self.dtest, 'test')]
-
         # Set xgboost parameters
         params = {}
         params['objective'] = 'binary:logistic'
@@ -137,24 +139,29 @@ class Run:
         params['eval_metric'] = 'auc'
         params['random_state'] = self.random_seed
 
-        mlflow.xgboost.autolog() 
+        resampling = SMOTE(sampling_strategy='minority', random_state=self.random_seed)
+        xgb = XGBClassifier(**params)
+        self.model = Pipeline([('SMOTE', resampling), ('XGBoost', xgb)])
 
-        self.model = xgb.train(params, 
-                            self.dtrain, 
-                            1000, 
-                            watchlist, 
-                            early_stopping_rounds=50, 
-                            maximize=True, 
-                            verbose_eval=50)
+        self.model.fit(self.X_train, self.y_train)
+        # mlflow.xgboost.autolog() 
+
+        # self.model = xgb.train(params, 
+        #                     self.dtrain, 
+        #                     1000, 
+        #                     watchlist, 
+        #                     early_stopping_rounds=50, 
+        #                     maximize=True, 
+        #                     verbose_eval=50)
 
  
         if os.path.exists(self.model_path):
             shutil.rmtree(self.model_path)
 
-        mlflow.xgboost.save_model(self.model, self.model_path)
+        mlflow.xgboost.save_model(xgb, self.model_path)
 
     def test(self):
-        y_proba_baseline = self.model.predict(self.dtest)
+        y_proba_baseline = self.model.predict_proba(self.X_test)[:, 1]
 
         average_precision = average_precision_score(self.y_test, y_proba_baseline)
         mlflow.log_metric('average_precision', average_precision)
