@@ -45,11 +45,11 @@ class Runner(object):
                             
     def send_feedback(self, payload, truth, reward):
         # Truth. Given by the model 
-        # Reward -> User says model is correct
+        # Reward -> User says model is correct/Label 
 
         data = { 'response': payload,         
-                'reward': reward, 
-                'truth': {'data': {'ndarray': [truth]}} 
+                'reward': int(reward), 
+                'truth': {'data': {'ndarray': [int(truth)]}} 
                 }                         
         return requests.post(self.feedback_url, json = data).json()
         
@@ -63,11 +63,11 @@ class Runner(object):
         for _ in range(self.count):
             response = self.send_request({'data': {'ndarray': nofraud_df.sample(1).values.tolist()}})
             proba_nofraud = response['data']['ndarray'][0]    
-            self.send_feedback(response, proba_nofraud < THRESHOLD, 0) 
+            self.send_feedback(response, proba_nofraud > THRESHOLD, 0 == (proba_nofraud > THRESHOLD)) 
         
             response = self.send_request({'data': {'ndarray': fraud_df.sample(1).values.tolist()}})
             proba_fraud = response['data']['ndarray'][0]
-            self.send_feedback(response, proba_fraud > THRESHOLD, 1) 
+            self.send_feedback(response, proba_fraud > THRESHOLD, 1 == (proba_fraud > THRESHOLD))
 
             if self.verbose:
                 print("Sending Class='0'. Result: {:.4f}".format(proba_nofraud))

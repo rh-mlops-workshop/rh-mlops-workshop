@@ -37,11 +37,11 @@ class Base(object):
         #return self.model.predict(X)
 
     def metadata(self):
-        logger.info("metadata method")
+        #logger.info("metadata method")
         return {"metadata":{"modelName":self.model_name}}
 
     def health_status(self):
-        logger.info("health status method")
+        #logger.info("health status method")
         return { "status": "ok" }
 
     def tags(self):
@@ -81,8 +81,8 @@ class Base(object):
         logger.info('Routing: {}'.format(routing))
         
         # Truth. Given by the model 
-        # Reward -> User says model is correct
-
+        # Reward -> User says model is correct/ Label
+        
         # truth is a list
         truth = truth[0]
         logger.info(f"Reward: {reward} Truth: {truth}")
