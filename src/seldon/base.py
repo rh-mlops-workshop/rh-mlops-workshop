@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+ 
 import os
 import logging
 
@@ -14,7 +16,7 @@ class Base(object):
         """
 
         self.model_name = model_name
-        logger.info('Starting {} Microservice'.format(__name__))
+        logger.info('Starting {} Microservice'.format(self.model_name))
 
         self.model_metadata = {}
         self.cm = {'tp': 0.0, 'fp': 0.0, 'tn': 0.0, 'fn': 0.0}
@@ -23,7 +25,6 @@ class Base(object):
         self.feedback_given = 0
         self.accuracy = self.precision = self.recall = self.f1 = 0.0
         
-    
     def predict(self, X, features_names):
         """
         Return a prediction.

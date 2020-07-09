@@ -17,8 +17,7 @@ class LRModel(Base):
         Add any initialization parameters. These will be passed at runtime from the graph definition parameters defined in your seldondeployment kubernetes resource manifest.
         """        
         super().__init__('LogisticRegression')
-
-        #model_path = '/tmp/model'
+        
         model_path = os.environ['HOME'] + '/model'
         self.model = mlflow.sklearn.load_model(model_path)
         
