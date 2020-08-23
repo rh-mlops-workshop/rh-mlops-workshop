@@ -11,3 +11,5 @@ pip install -r $DIR/requirements.txt
 echo "Running training"
 rm -rf $HOME/model
 python $DIR/$PYTHON_SCRIPT -m $HOME/model -r $RUN_NAME
+
+echo "Done"

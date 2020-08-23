@@ -11,3 +11,5 @@ pip install -r $DIR/requirements.txt
 
 echo "Running training"
 python $DIR/$PYTHON_SCRIPT -m /workspace/model -r $RUN_NAME
+
+echo "Done"
