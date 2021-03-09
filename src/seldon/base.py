@@ -95,9 +95,9 @@ class Base(object):
                 self.cm['tn'] += 1
         elif reward == 0:
             if truth == 1:
-                self.cm['fn'] += 1
-            elif truth == 0:
                 self.cm['fp'] += 1
+            elif truth == 0:
+                self.cm['fn'] += 1
 
         logger.info(self.cm)
         
