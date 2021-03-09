@@ -118,10 +118,11 @@ class Run:
 
     def train(self):
 
-        resampling = SMOTE(sampling_strategy='minority',
-                           random_state=self.random_seed)
-        self.model = Pipeline(
-            [('SMOTE', resampling), ('Logistic Regression', LogisticRegression())])
+        #resampling = SMOTE(sampling_strategy='minority',
+        #                   random_state=self.random_seed)
+        #self.model = Pipeline(
+        #    [('SMOTE', resampling), ('Logistic Regression', LogisticRegression())])
+        self.model= LogisticRegression()
 
         self.model.fit(self.X_train, self.y_train)
 
