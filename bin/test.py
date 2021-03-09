@@ -73,7 +73,7 @@ class Runner(object):
                 print("Sending Class='0'. Result: {:.4f}".format(proba_nofraud))
                 print("Sending Class='1'. Result: {:.4f}".format(proba_fraud))
 
-            sleep(0.1)
+            sleep(0.3)
 
         print('DONE')
 
